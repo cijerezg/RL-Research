@@ -1,4 +1,6 @@
 """Training RL algorithm."""
+"""A small test"""
+
 
 import sys
 sys.path.insert(0, '../')
