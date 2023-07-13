@@ -75,8 +75,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
-                    notes='Run a whole policy for the entire episode.',
-                    name='Dual policy-1'):
+                    notes='Run a whole policy for the entire episode (Use SAC, not prior).',
+                    name='SAC Dual policy'):
 
         config = wandb.config
 
