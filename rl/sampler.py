@@ -55,13 +55,13 @@ class Sampler(hyper_params):
 
         return obs_trj, rew_trj, done_trj, frames
 
-    def skill_step(self, params, obs, frames=None):
+    def skill_step(self, params, obs, policy, frames=None):
         obs_t = torch.from_numpy(obs).to(self.device).to(torch.float32)
         obs_t = obs_t.reshape(1, -1)
 
         with torch.no_grad():
             z_sample, _, _, _ = functional_call(self.skill_policy,
-                                                params['SkillPolicy'],
+                                                params[f'SkillPolicy{policy}'],
                                                 obs_t)
                 
             actions = self.decoder(z_sample, params)
@@ -82,7 +82,7 @@ class Sampler(hyper_params):
 
         with torch.no_grad():
             next_z_sample, _, _, _ = functional_call(self.skill_policy,
-                                                     params['SkillPolicy'],
+                                                     params[f'SkillPolicy{policy}'],
                                                      next_obs_t)
            
         next_obs = obs_trj[-1]
@@ -97,11 +97,11 @@ class Sampler(hyper_params):
 
         return next_obs, rew, z, next_z, done
 
-    def skill_iteration(self, params, done=False, obs=None):
+    def skill_iteration(self, params, done=False, obs=None, policy=0):
         if done or obs is None:
             obs = self.env.reset()
 
-        return obs, self.skill_step(params, obs)
+        return obs, self.skill_step(params, obs, policy)
 
     def skill_iteration_with_frames(self, params, done=False, obs=None, frames=None):
         if done or obs is None:

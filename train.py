@@ -75,8 +75,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
-                    notes='Previous params are kept for comparison',
-                    name='Policy eval'):
+                    notes='Run a whole policy for the entire episode.',
+                    name='Dual policy-1'):
 
         config = wandb.config
 
@@ -107,11 +107,11 @@ def main(config=None):
         
         hives_models = list(hives.models.values())
 
-        models = [*hives_models, vals.skill_policy,
+        models = [*hives_models, vals.skill_policy, vals.skill_policy,
                   vals.critic, vals.critic,
                   vals.critic, vals.critic]
         
-        names = [*hives.names, 'SkillPolicy', 'Critic1', 'Target_critic1',
+        names = [*hives.names, 'SkillPolicy0', 'SkillPolicy1', 'Critic1', 'Target_critic1',
                  'Critic2', 'Target_critic2']
     
         params_path = 'params.pt'
@@ -125,7 +125,7 @@ def main(config=None):
         test_freq = test_freq if test_freq > 0 else 1
     
         keys_optims = ['VAE_skills']
-        keys_optims.extend(['SkillPrior', 'SkillPolicy'])
+        keys_optims.extend(['SkillPrior', 'SkillPolicy0', 'SkillPolicy1'])
         keys_optims.extend(['Critic1', 'Critic2'])
 
         optimizers = set_optimizers(params, keys_optims, config.critic_lr)

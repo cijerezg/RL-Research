@@ -1,6 +1,4 @@
 """Training RL algorithm."""
-"""A small test"""
-
 
 import sys
 sys.path.insert(0, '../')
@@ -61,6 +59,8 @@ class VaLS(hyper_params):
         self.log_data = 0
         self.log_data_freq = 1000
         self.email = True
+        self.use_policy = 0
+        self.policy_usage_history = 0
         
     def training(self, params, optimizers, path, name):               
         self.iterations = 0
@@ -99,7 +99,7 @@ class VaLS(hyper_params):
             if self.iterations == self.reset_frequency:
                 self.reset_frequency = 2 * self.reset_frequency
                 self.gradient_steps = 1
-                keys = ['SkillPolicy', 'Critic1', 'Critic2']
+                keys = ['SkillPolicy0', 'SkillPolicy1', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
                 params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
                 self.log_alpha_skill = torch.tensor(INIT_LOG_ALPHA, dtype=torch.float32,
@@ -118,8 +118,8 @@ class VaLS(hyper_params):
                            lr,
                            ref_params,
                            obs=None):
-               
-        obs, data = self.sampler.skill_iteration(params, done, obs)
+
+        obs, data = self.sampler.skill_iteration(params, done=done, obs=obs, policy=self.use_policy)
 
         next_obs, rew, z, next_z, done = data
 
@@ -131,6 +131,9 @@ class VaLS(hyper_params):
         self.experience_buffer.add(obs, next_obs, z, next_z, rew, done)
 
         if done:
+            next_obs = self.sampler.env.reset()
+            self.select_policy(params, next_obs)
+                        
             if self.total_episode_counter > 2 and self.modified_buffer:
                 self.experience_buffer.update_tracking_buffers(self.reward_per_episode)
 
@@ -140,6 +143,7 @@ class VaLS(hyper_params):
             self.reward_logger.append(self.reward_per_episode)
             self.reward_per_episode = 0
             self.total_episode_counter += 1
+            done = False
 
         log_data = True if self.log_data % self.log_data_freq == 0 else False
 
@@ -154,7 +158,7 @@ class VaLS(hyper_params):
             for i in range(self.gradient_steps):
                 policy_losses, critic1_loss, critic2_loss = self.losses(params, log_data, ref_params)
                 losses = [*policy_losses, critic1_loss, critic2_loss]
-                names = ['SkillPolicy', 'Critic1', 'Critic2']
+                names = ['SkillPolicy0', 'SkillPolicy1', 'Critic1', 'Critic2']
                 params = Adam_update(params, losses, names, optimizers, lr)
                 polyak_update(params['Critic1'].values(),
                               params['Target_critic1'].values(), 0.005)
@@ -164,7 +168,7 @@ class VaLS(hyper_params):
             if log_data:
                 with torch.no_grad():
                     dist_init1 = self.distance_to_params(params, ref_params, 'Critic1', 'Critic1')
-                    dist_init_pol = self.distance_to_params(params, ref_params, 'SkillPolicy', 'SkillPolicy')
+                    dist_init_pol = self.distance_to_params(params, ref_params, 'SkillPolicy0', 'SkillPolicy0')
                     
                 wandb.log({'Critic/Distance to init weights': dist_init1,
                            'Policy/Distance to init weights Skills': dist_init_pol}) 
@@ -342,27 +346,34 @@ class VaLS(hyper_params):
         #     wandb.alert(title='Critic loss exploded',
         #                 text=f'Critic loss is {critic1_loss}')
         #     self.email = False
-        
-        z_sample, pdf, mu, std = self.eval_skill_policy(obs, params)
 
-        q_pi_arg = torch.cat([obs, z_sample], dim=1)
-        
-        q_pi1, q_pi2 = self.eval_critic(q_pi_arg, params)
-        q_pi = torch.cat((q_pi1, q_pi2), dim=1)
-        q_pi, _ = torch.min(q_pi, dim=1)
-        
-        if self.use_SAC:
-            skill_prior = torch.clamp(pdf.entropy(), max=MAX_SKILL_KL).mean()
-        else:
-            skill_prior = torch.clamp(kl_divergence(pdf, z_prior), max=MAX_SKILL_KL).mean()
-        
-        alpha_skill = torch.exp(self.log_alpha_skill).detach()
-        skill_prior_loss = alpha_skill * skill_prior
-        
-        q_val_policy = -torch.mean(q_pi)
-        skill_policy_loss = q_val_policy + skill_prior_loss
+        policy_losses = []
+        q_pis = []
+        mus = []
 
-        policy_losses = [skill_policy_loss]
+        for i in [0, 1]:
+            z_sample, pdf, mu, std = self.eval_skill_policy(obs, params, i)
+
+            q_pi_arg = torch.cat([obs, z_sample], dim=1)
+            
+            q_pi1, q_pi2 = self.eval_critic(q_pi_arg, params)
+            q_pi = torch.cat((q_pi1, q_pi2), dim=1)
+            q_pi, _ = torch.min(q_pi, dim=1)
+        
+            if self.use_SAC:
+                skill_prior = torch.clamp(pdf.entropy(), max=MAX_SKILL_KL).mean()
+            else:
+                skill_prior = torch.clamp(kl_divergence(pdf, z_prior), max=MAX_SKILL_KL).mean()
+        
+            alpha_skill = torch.exp(self.log_alpha_skill).detach()
+            skill_prior_loss = alpha_skill * skill_prior
+        
+            q_val_policy = -torch.mean(q_pi)
+            skill_policy_loss = q_val_policy + skill_prior_loss
+            policy_losses.append(skill_policy_loss)
+
+            q_pis.append(q_pi.detach())
+            mus.append(mu.detach())
             
         loss_alpha_skill = torch.exp(self.log_alpha_skill) * \
             (self.delta_skill - skill_prior).detach()
@@ -372,19 +383,28 @@ class VaLS(hyper_params):
         self.optimizer_alpha_skill.step()
           
         if log_data:
+            
             with torch.no_grad():
-                z_ref, _, mu_ref, _ = self.eval_skill_policy(obs, ref_params)
+                z_ref, _, mu_ref, _ = self.eval_skill_policy(obs, ref_params, 1)
                 q_pi_ref_arg = torch.cat([obs, z_ref], dim=1)
                 q_pi_ref, _ = self.eval_critic(q_pi_ref_arg, params)
                 mu_diff = F.l1_loss(mu, mu_ref, reduction='none').mean(1)
                 mu_max = torch.max(torch.abs(mu), axis=1)[0]
-                mu_ref_max = torch.max(torch.abs(mu_ref), axis=1)[0]                
+                mu_ref_max = torch.max(torch.abs(mu_ref), axis=1)[0]
+
+            pi_diffs = F.l1_loss(mus[0], mus[1], reduction='none').mean(1)
 
             heatmap_Qpis = self.log_histogram_2d(q_pi.unsqueeze(dim=1), q_pi_ref, 'Q pi', 'Q pi ref')
             heatmap_max = self.log_histogram_2d(mu_max.unsqueeze(dim=1), mu_ref_max.unsqueeze(dim=1),
                                                 'Mu max', 'Mu ref max')
             pi_terms = self.log_scatter_3d(q1, q_refs, mu_diff.unsqueeze(dim=1), idxs.unsqueeze(dim=1),
                                            'Q val', 'Q refs', 'Mu diff', 'Idxs')
+
+            pols_comp1 = self.log_scatter_3d(q_pis[0].unsqueeze(dim=1), q_pis[1].unsqueeze(dim=1), rew,
+                                             cum_reward, 'Q pi 1', 'Q pi 2', 'Reward', 'Cum reward')
+            
+            pols_comp2 = self.log_scatter_3d(q_pis[0].unsqueeze(dim=1), q_pis[1].unsqueeze(dim=1), pi_diffs.unsqueeze(dim=1),
+                                             cum_reward, 'Q pi 1', 'Q pi 2', 'Mu diff', 'Cum reward')         
                 
             wandb.log(
                 {'Policy/current_q_values': wandb.Histogram(q_pi.detach().cpu()),
@@ -398,7 +418,9 @@ class VaLS(hyper_params):
                  'Policy/Mu dist': wandb.Histogram(mu.detach().cpu()),
                  'Policy/Q vals': heatmap_Qpis,
                  'Policy/pi terms': pi_terms,
-                 'Policy/Max policies': heatmap_max})
+                 'Policy/Max policies': heatmap_max,
+                 'Policy/Q vals rewards': pols_comp1,
+                 'Policy/Q vals mu diff': pols_comp2})
 
             wandb.log(
                 {'Priors/Alpha skill': alpha_skill.detach().cpu(),
@@ -431,9 +453,9 @@ class VaLS(hyper_params):
         return z_prior
     
 
-    def eval_skill_policy(self, state, params):
+    def eval_skill_policy(self, state, params, policy):
         sample, pdf, mu, std = functional_call(self.skill_policy,
-                                               params['SkillPolicy'],
+                                               params[f'SkillPolicy{policy}'],
                                                state)
         return sample, pdf, mu, std
 
@@ -504,26 +526,23 @@ class VaLS(hyper_params):
 
         return fig_scatter
 
-    def select_policy(self, params, done, obs):
-        if done or obs is None:
-            self.policy_use = self.policy_use
-        else:
-            obs = np.array(obs, dtype=np.float32)
-            obs = torch.from_numpy(obs).to(self.device)
-            obs = obs.reshape(1, -1)
-            zs = []
-            with torch.no_grad():
-                for i in [0, 1]:
-                    z, _, _, _ = self.eval_skill_policy(obs, params, i)
-                    zs.append(z)
-                zs = torch.cat(zs, dim=0)
-                obs = obs.repeat(2, 1)
-                q_arg = torch.cat([obs, zs], dim=1)
-                q_pi1, q_pi2 = self.eval_critic(q_arg, params)
-                q_pi = torch.cat((q_pi1, q_pi2), dim=1)
-                q_pi, _ = torch.min(q_pi, dim=1)
-                self.policy_use = q_pi.argmax().item()
-                # item() is used to extract the value and eliminate tensors.
+    def select_policy(self, params, obs):
+        obs = np.array(obs, dtype=np.float32)
+        obs = torch.from_numpy(obs).to(self.device)
+        obs = obs.reshape(1, -1)
+        zs = []
+        with torch.no_grad():
+            for i in [0, 1]:
+                z, _, _, _ = self.eval_skill_policy(obs, params, i)
+                zs.append(z)
+            zs = torch.cat(zs, dim=0)
+            obs = obs.repeat(2, 1)
+            q_arg = torch.cat([obs, zs], dim=1)
+            q_pi1, q_pi2 = self.eval_critic(q_arg, params)
+            q_pi = torch.cat((q_pi1, q_pi2), dim=1)
+            q_pi, _ = torch.min(q_pi, dim=1)
+            self.use_policy = q_pi.argmax().item()
+            # item() is used to extract the value and eliminate tensors.
                                                    
 
     def get_gradient(self, x, params, key):
