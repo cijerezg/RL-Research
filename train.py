@@ -75,8 +75,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
-                    notes='Previous params are kept for comparison',
-                    name='Policy eval'):
+                    notes='Train policy for 15 steps, whereas critic for 1.',
+                    name='Test'):
 
         config = wandb.config
 

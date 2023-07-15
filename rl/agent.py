@@ -190,7 +190,7 @@ class VaLS(hyper_params):
             new_z = z.reshape(z.shape[0], 1, -1).repeat(1, trials, 1)
             new_z = new_z.reshape(-1, new_z.shape[-1])
             z_rand = torch.rand(new_z.shape).to(self.device)
-            new_z = new_z + torch.randn(new_z.shape).to(self.device)
+            new_z = new_z + torch.randn(new_z.shape).to(self.device) / 5
 
             new_obs = obs.reshape(obs.shape[0], 1, -1).repeat(1, trials, 1)
             new_obs = new_obs.reshape(-1, new_obs.shape[-1])
@@ -277,13 +277,20 @@ class VaLS(hyper_params):
             bellman_terms_ref = self.log_scatter_3d(q1, q_refs, cum_reward, idxs.unsqueeze(dim=1),
                                                     'Q val', 'Q refs', 'Cum reward', 'Idxs')
 
+            d1, d2, d3 = self.distance_to_target_env(obs)
+
+            eval_crit = self.log_scatter_3d(d1, d2, d3, q1, 'Palm to ball', 'Palm to target',
+                                         'Ball to target', 'Qval')
+
+            
             wandb.log({'Critic/Distance critic to target 1': dist1,
                        'Critic/Q vals heatmap': heatmap_Qs,
                        'Critic/Q next heatmap': heatmap_Q_next,
                        'Critic/Q refs heatmap': heatmap_Qref,
                        'Critic/Q target refs heatmap': heatmap_Qreftarget,
                        'Critic/Bellman terms': bellman_terms,
-                       'Critic/Bellman ref terms': bellman_terms_ref})
+                       'Critic/Bellman ref terms': bellman_terms_ref,
+                       'Critic/Eval critic': eval_crit})
 
         q_target = rew + (0.97 * q_target).reshape(-1, 1) * (1 - dones)
         q_target = torch.clamp(q_target, min=-100, max=100)
@@ -522,6 +529,14 @@ class VaLS(hyper_params):
                 q_pi, _ = torch.min(q_pi, dim=1)
                 self.policy_use = q_pi.argmax().item()
                 # item() is used to extract the value and eliminate tensors.
+
+    def distance_to_target_env(self, obs):
+        ds = obs[:, -9:]
+        d1 = torch.norm(ds[:, 0:3], dim=1).unsqueeze(dim=1)  # Palm to ball
+        d2 = torch.norm(ds[:, 3:6], dim=1).unsqueeze(dim=1)  # Palm to target
+        d3 = torch.norm(ds[:, 6:9], dim=1).unsqueeze(dim=1)  # Ball to target
+
+        return d1, d2, d3
                                                    
 
     def get_gradient(self, x, params, key):
@@ -535,7 +550,7 @@ class VaLS(hyper_params):
             pdb.set_trace()
         return torch.norm(grads_vec).detach().cpu()
 
-    def distance_to_params(self, params1, params2, name1 ,name2):
+    def distance_to_params(self, params1, params2, name1, name2):
         with torch.no_grad():
             vec1 = nn.utils.parameters_to_vector(params1[name1].values())
             target_vec1 = nn.utils.parameters_to_vector(params2[name2].values())
