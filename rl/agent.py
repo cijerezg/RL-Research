@@ -60,7 +60,7 @@ class VaLS(hyper_params):
         self.log_data_freq = 1000
         self.email = True
         
-    def training(self, params, optimizers, path, name):               
+    def training(self, params, optimizers, path, name):
         self.iterations = 0
         ref_params = copy.deepcopy(params)
 

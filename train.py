@@ -75,8 +75,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
-                    notes='Train policy for 15 steps, whereas critic for 1.',
-                    name='Test'):
+                    notes='Train using offline data mixed with on-policy data.',
+                    name='Offline-Data'):
 
         config = wandb.config
 
@@ -121,6 +121,9 @@ def main(config=None):
         
         params = params_extraction(models, names, pretrained_params)
 
+        vals.experience_buffer.log_offline_dataset('datasets/relocate-expert-v1.pt',
+                                                   params, hives.evaluate_encoder, hives.device)
+        
         test_freq = config.epochs // 4
         test_freq = test_freq if test_freq > 0 else 1
     
