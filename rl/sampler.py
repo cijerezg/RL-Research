@@ -173,7 +173,6 @@ class ModifiedReplayBuffer:
         self.idx_tracker = np.zeros((size, 1), dtype=np.float32)
         self.threshold = 0.0
 
-        self.size = size
         self.env = env
         self.lat_dim = lat_dim
 

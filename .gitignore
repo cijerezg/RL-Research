@@ -131,5 +131,5 @@ dmypy.json
 
 # Local ignores
 wandb/
-checkpoints_relocate/New-Baseline/
+checkpoints_relocate/New_Baseline/
 datasets/
