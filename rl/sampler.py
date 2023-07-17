@@ -173,6 +173,8 @@ class ModifiedReplayBuffer:
         self.idx_tracker = np.zeros((size, 1), dtype=np.float32)
         self.threshold = 0.0
 
+        self.sampling_ratio = 25000
+        self.ratio = .5
         self.env = env
         self.lat_dim = lat_dim
 
@@ -192,11 +194,15 @@ class ModifiedReplayBuffer:
         # idxs = np.random.power(1 + .25 * self.ptr / 1e5, size=batch_size)
         # idxs = np.array(idxs * self.size, dtype=np.int32)
 
-        idxs = np.random.randint(0, self.size, size=int(batch_size / 2))
+        if self.size == self.sampling_ratio:
+            self.sampling_ratio = self.sampling_ratio * 2
+            self.ratio = self.ratio / 2
+
+        idxs = np.random.randint(0, self.size, size=254)#int((1 - self.ratio) * 256))
         
         self.idx_tracker[idxs] += 1
 
-        idxs_off = np.random.randint(0, 120000, size=int(batch_size / 2))
+        idxs_off = np.random.randint(0, 120000, size=2)#int(self.ratio * 256))
 
         obs = np.concatenate((self.obs_buf[idxs], self.offline_obs_buf[idxs_off]), axis=0)
         z = np.concatenate((self.z_buf[idxs], self.offline_z_buf[idxs_off]), axis=0)

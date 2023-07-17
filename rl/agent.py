@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
+import math
 
 MAX_SKILL_KL = 100
 INIT_LOG_ALPHA = 0
@@ -94,9 +95,9 @@ class VaLS(hyper_params):
             if self.iterations == int(self.reset_frequency * 3 / 4):
                 ref_params = copy.deepcopy(params)
 
-            if self.iterations == self.reset_frequency:
+            if self.iterations == self.reset_frequency == 0:
                 self.reset_frequency = 2 * self.reset_frequency
-                self.gradient_steps = 1
+                self.gradient_steps = math.ceil(self.gradient_steps / 2)
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
                 params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)

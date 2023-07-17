@@ -12,6 +12,7 @@ import os
 import torch
 import numpy as np
 import copy
+import pickle
 
 torch.set_printoptions(sci_mode=False)
 np.set_printoptions(precision=5)
@@ -50,8 +51,8 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 1,
-    'max_iterations': int(4e5 + 1),
+    'gradient_steps': 4,
+    'max_iterations': int(2e5 + 1),
     'buffer_size': int(4e5 + 1),
     'test_freq': 100000,
     'reset_frequency': 25000,
@@ -76,7 +77,7 @@ def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
                     notes='Train using offline data mixed with on-policy data.',
-                    name='Offline-Data'):
+                    name='Offline-Decrement-Data-Grads'):
 
         config = wandb.config
 
@@ -97,7 +98,26 @@ def main(config=None):
             experience_buffer = ModifiedReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
         else:
             experience_buffer = NormalReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
-                   
+
+        with open('checkpoints_relocate/class', 'rb') as file:
+            aux_vals = pickle.load(file)
+
+        exp_idx = 25000
+        idx = 300000
+        experience_buffer.obs_buf[0: exp_idx, :] = aux_vals.experience_buffer.obs_buf[idx: idx + exp_idx, :]
+        experience_buffer.next_obs_buf[0: exp_idx, :] = aux_vals.experience_buffer.next_obs_buf[idx: idx + exp_idx, :]
+        experience_buffer.z_buf[0: exp_idx, :] = aux_vals.experience_buffer.z_buf[idx: idx + exp_idx, :]
+        experience_buffer.next_z_buf[0: exp_idx, :] = aux_vals.experience_buffer.next_z_buf[idx: idx + exp_idx, :]
+        experience_buffer.rew_buf[0: exp_idx, :] = aux_vals.experience_buffer.rew_buf[idx: idx + exp_idx, :]
+        experience_buffer.done_buf[0: exp_idx, :] = aux_vals.experience_buffer.done_buf[idx: idx + exp_idx, :]
+        experience_buffer.cum_reward[0: exp_idx, :] = aux_vals.experience_buffer.cum_reward[idx: idx + exp_idx, :]
+        
+
+        experience_buffer.ptr = exp_idx
+        experience_buffer.size = exp_idx
+
+        pdb.set_trace()
+        
         vals = VaLS(sampler,
                     experience_buffer,
                     hives,
