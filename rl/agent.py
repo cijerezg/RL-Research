@@ -95,8 +95,9 @@ class VaLS(hyper_params):
             if self.iterations == int(self.reset_frequency * 3 / 4):
                 ref_params = copy.deepcopy(params)
 
-            if self.iterations == self.reset_frequency == 0:
-                self.reset_frequency = 2 * self.reset_frequency
+            if self.iterations == self.reset_frequency:
+                if self.reset_frequency < 24000:
+                    self.reset_frequency = 2 * self.reset_frequency
                 self.gradient_steps = math.ceil(self.gradient_steps / 2)
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
@@ -207,9 +208,6 @@ class VaLS(hyper_params):
 
                 q1_rand, _ = self.eval_critic(new_critic_arg_rand, params)
                 q1_rand = q1_rand.reshape(-1, trials, 1)
-                
-                max_diff1 = q1_r - q1_rep.max(1)[0]
-                mean_diff1 = q1_r - q1_rep.mean(1)
 
                 max_diff_rand = q1_r - q1_rand.max(1)[0]
                 mean_diff_rand = q1_r - q1_rand.mean(1)
@@ -219,11 +217,7 @@ class VaLS(hyper_params):
             eval_test_max = self.log_scatter_3d(q1_r, q1_rep.max(1)[0], q1_rand.max(1)[0], idxs.unsqueeze(dim=1),
                                                 'Q val', 'Q random centered', 'Q random', 'Idxs')
 
-            wandb.log({'Critic/Max diff dist': wandb.Histogram(max_diff1.cpu()),
-                       'Critic/Mean diff dist': wandb.Histogram(mean_diff1.cpu()),
-                       'Critic/Max diff average': max_diff1.mean().cpu(),
-                       'Critic/Mean diff average': mean_diff1.mean().cpu(),
-                       'Critic/Max diff dist rand': wandb.Histogram(max_diff_rand.cpu()),
+            wandb.log({'Critic/Max diff dist rand': wandb.Histogram(max_diff_rand.cpu()),
                        'Critic/Mean diff dist rand': wandb.Histogram(mean_diff_rand.cpu()),
                        'Critic/Max diff average rand': max_diff_rand.mean().cpu(),
                        'Critic/Mean diff average rand': mean_diff_rand.mean().cpu(),
@@ -245,6 +239,7 @@ class VaLS(hyper_params):
         ####
 
         target_critic_arg = torch.cat([next_obs, next_z], dim=1)
+        critic_arg = torch.cat([obs, z], dim=1)
         
         with torch.no_grad():                                
             z_prior = self.eval_skill_prior(obs, params)
@@ -254,8 +249,6 @@ class VaLS(hyper_params):
 
         q_target = torch.cat((q_target1, q_target2), dim=1)
         q_target, _ = torch.min(q_target, dim=1)
-            
-        critic_arg = torch.cat([obs, z], dim=1)
 
         q1, q2 = self.eval_critic(critic_arg, params)
         
@@ -320,16 +313,6 @@ class VaLS(hyper_params):
                  'Critic error - Reward heatmap': heatmap_Rew,
                  'Critic error - Cumulative reward': heatmap_cum,
                  'Critic error - Q vals': heatmap_Err_Q})
-
-            zero_idx = batch.cum_reward < 0.5
-            one_idx = (batch.cum_reward > 0.5) & (batch.cum_reward < 5)
-            ten_idx = (batch.cum_reward > 5) & (batch.cum_reward < 20)
-            thirty_idx = batch.cum_reward > 20
-
-            wandb.log({'Critic/Zero cum Q vals': wandb.Histogram(q1[zero_idx[:, 0]].detach().cpu()),
-                       'Critic/One cum Q vals': wandb.Histogram(q1[one_idx[:, 0]].detach().cpu()),
-                       'Critic/Ten cum Q vals': wandb.Histogram(q1[ten_idx[:, 0]].detach().cpu()),
-                       'Critic/Thirty cum Q vals': wandb.Histogram(q1[thirty_idx[:, 0]].detach().cpu())})
 
             rew_thrh = 0.0
 

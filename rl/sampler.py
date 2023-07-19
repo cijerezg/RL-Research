@@ -174,7 +174,7 @@ class ModifiedReplayBuffer:
         self.threshold = 0.0
 
         self.sampling_ratio = 25000
-        self.ratio = .5
+        self.ratio = .75
         self.env = env
         self.lat_dim = lat_dim
 
@@ -196,13 +196,16 @@ class ModifiedReplayBuffer:
 
         if self.size == self.sampling_ratio:
             self.sampling_ratio = self.sampling_ratio * 2
-            self.ratio = self.ratio / 2
+            self.ratio = self.ratio / 4
 
-        idxs = np.random.randint(0, self.size, size=254)#int((1 - self.ratio) * 256))
+        if self.ratio < 1 / 5:
+            self.ratio == 0
+
+        idxs = np.random.randint(0, self.size, size=int((1 - self.ratio) * 256))
         
         self.idx_tracker[idxs] += 1
 
-        idxs_off = np.random.randint(0, 120000, size=2)#int(self.ratio * 256))
+        idxs_off = np.random.randint(0, 120000, size=int(self.ratio * 256))
 
         obs = np.concatenate((self.obs_buf[idxs], self.offline_obs_buf[idxs_off]), axis=0)
         z = np.concatenate((self.z_buf[idxs], self.offline_z_buf[idxs_off]), axis=0)
