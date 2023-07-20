@@ -51,7 +51,7 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 2,
+    'gradient_steps': 8,
     'max_iterations': int(2e5 + 1),
     'buffer_size': int(4e5 + 1),
     'test_freq': 100000,
@@ -76,8 +76,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
-                    notes='Training target critic with same data as critic.',
-                    name='Test'):
+                    notes='Sample multiple actions from Q critic.',
+                    name='Q exploration'):
 
         config = wandb.config
 
