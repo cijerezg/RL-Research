@@ -51,7 +51,7 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 8,
+    'gradient_steps': 2,
     'max_iterations': int(2e5 + 1),
     'buffer_size': int(4e5 + 1),
     'test_freq': 100000,
@@ -77,7 +77,7 @@ def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
                     notes='Training target critic with same data as critic.',
-                    name='No s+1 target data'):
+                    name='Test'):
 
         config = wandb.config
 
@@ -131,7 +131,7 @@ def main(config=None):
         names = [*hives.names, 'SkillPolicy', 'Critic1', 'Target_critic1',
                  'Critic2', 'Target_critic2']
     
-        params_path = 'params.pt'
+        params_path = 'params_rl.pt'
         
         pretrained_params = load_pretrained_models(config, PARENT_FOLDER, params_path)
         pretrained_params.extend([None] * (len(names) - len(pretrained_params)))
