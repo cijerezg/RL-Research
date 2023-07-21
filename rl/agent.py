@@ -240,7 +240,7 @@ class VaLS(hyper_params):
         trials = 64
         
         expanded_z = next_z.reshape(1, next_z.shape[0], next_z.shape[1]).repeat(trials, 1, 1)
-        expanded_z = expanded_z + torch.randn(expanded_z.shape).to(self.device)
+        expanded_z = expanded_z + torch.randn(expanded_z.shape).to(self.device) / 2
 
         expanded_obs = next_obs.reshape(1, next_obs.shape[0], next_obs.shape[1]).repeat(trials, 1, 1)
         
@@ -296,9 +296,8 @@ class VaLS(hyper_params):
             d1, d2, d3 = self.distance_to_target_env(obs)
 
             eval_crit = self.log_scatter_3d(d1, d2, d3, q1, 'Palm to ball', 'Palm to target',
-                                         'Ball to target', 'Qval')
+                                            'Ball to target', 'Qval')
 
-            
             wandb.log({'Critic/Distance critic to target 1': dist1,
                        'Critic/Q vals heatmap': heatmap_Qs,
                        'Critic/Q next heatmap': heatmap_Q_next,
@@ -322,8 +321,7 @@ class VaLS(hyper_params):
 
             heatmap_Rew = self.log_histogram_2d(err_pass.unsqueeze(dim=1), rew,
                                                 'Error', 'Reward')
-            heatmap_cum = self.log_histogram_2d(err_pass.unsqueeze(dim=1), cum_reward,
-                                                'Error', 'Cumulative reward')
+
             heatmap_Err_Q = self.log_histogram_2d(err_pass.unsqueeze(dim=1), q1,
                                                   'Error', 'Q vals')
             
@@ -332,9 +330,8 @@ class VaLS(hyper_params):
                  'Critic/Error dist': wandb.Histogram(torch.log(critic1_loss + 1).detach().cpu()),
                  'Critic/Median error': torch.median(critic1_loss).detach().cpu(),
                  'Critic/Max error': critic1_loss.max().detach().cpu(),
-                 'Critic error - Reward heatmap': heatmap_Rew,
-                 'Critic error - Cumulative reward': heatmap_cum,
-                 'Critic error - Q vals': heatmap_Err_Q})
+                 'Critic/Error - Reward heatmap': heatmap_Rew,
+                 'Critic/Error - Q vals': heatmap_Err_Q})
 
             rew_thrh = 0.0
 
