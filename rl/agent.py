@@ -238,22 +238,23 @@ class VaLS(hyper_params):
                                                                  
         ####
         trials = 64
+        
         expanded_z = next_z.reshape(1, next_z.shape[0], next_z.shape[1]).repeat(trials, 1, 1)
-        expanded_z = expanded_z + torch.randn(expanded_z.shape).to(self.device) / 5
+        expanded_z = expanded_z + torch.randn(expanded_z.shape).to(self.device)
 
         expanded_obs = next_obs.reshape(1, next_obs.shape[0], next_obs.shape[1]).repeat(trials, 1, 1)
         
-        #target_critic_arg = torch.cat([next_obs, next_z], dim=1)
-        target_critic_arg = torch.cat([expanded_obs, expanded_z], dim=2)
-        target_critic_arg = torch.swapaxes(target_critic_arg, 0, 1)
-        target_critic_arg = target_critic_arg.reshape(-1, target_critic_arg.shape[-1])
+        target_critic_arg = torch.cat([next_obs, next_z], dim=1)
+        target_critic_arg_aux = torch.cat([expanded_obs, expanded_z], dim=2)
+        target_critic_arg_aux = torch.swapaxes(target_critic_arg_aux, 0, 1)
+        target_critic_arg_aux = target_critic_arg_aux.reshape(-1, target_critic_arg_aux.shape[-1])
 
         critic_arg = torch.cat([obs, z], dim=1)
         
         with torch.no_grad():                                
             z_prior = self.eval_skill_prior(obs, params)
             
-            q_target1, q_target2 = self.eval_critic(target_critic_arg, params,
+            q_target1, q_target2 = self.eval_critic(target_critic_arg_aux, params,
                                                     target_critic=True)
 
             q_target1, q_target2 = q_target1.reshape(-1, trials, 1), q_target2.reshape(-1, trials, 1)
@@ -261,9 +262,10 @@ class VaLS(hyper_params):
             if log_data:
                 stds = q_target1.std(1)
                 means = q_target1.mean(1)
-                heatmap_Q_explore = self.log_histogram_2d(means, stds, 'Means', 'STDs')
 
-                wandb.log({'Q variation': heatmap_Q_explore})
+                heatmap_Q_explore = self.log_histogram_2d(means, stds, 'Means', 'STDs')
+                
+                wandb.log({'Critic/Q variation': heatmap_Q_explore})
             
             q_target1, q_target2 = q_target1.mean(1), q_target2.mean(1)
 

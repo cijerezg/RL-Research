@@ -159,7 +159,7 @@ class NormalReplayBuffer:
 
         
 class ModifiedReplayBuffer:
-    def __init__(self, size, env, lat_dim):
+    def __init__(self, size, env, lat_dim, reset_ratio):
         self.obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)
         self.next_obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)
         self.z_buf = np.zeros((size, lat_dim), dtype=np.float32)
@@ -173,7 +173,7 @@ class ModifiedReplayBuffer:
         self.idx_tracker = np.zeros((size, 1), dtype=np.float32)
         self.threshold = 0.0
 
-        self.sampling_ratio = 25000
+        self.sampling_ratio = reset_ratio
         self.ratio = .75
         self.env = env
         self.lat_dim = lat_dim
@@ -198,8 +198,8 @@ class ModifiedReplayBuffer:
             self.sampling_ratio = self.sampling_ratio * 2
             self.ratio = self.ratio / 4
 
-        if self.ratio < 1 / 5:
-            self.ratio == 0
+        if self.ratio < 1 / 10:
+            self.ratio = 0
 
         idxs = np.random.randint(0, self.size, size=int((1 - self.ratio) * 256))
         

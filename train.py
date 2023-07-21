@@ -55,7 +55,7 @@ config = {
     'max_iterations': int(2e5 + 1),
     'buffer_size': int(4e5 + 1),
     'test_freq': 100000,
-    'reset_frequency': 12500,
+    'reset_frequency': 1200,
 
     # Run params
     'train_VAE_models': False,
@@ -75,9 +75,9 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(Study)', config=config,
+    with wandb.init(project='ReplayBuffer-Relocate-(Opt)', config=config,
                     notes='Sample multiple actions from Q critic.',
-                    name='Q exploration'):
+                    name='Q exploration 1 std'):
 
         config = wandb.config
 
@@ -95,7 +95,7 @@ def main(config=None):
         sampler = Sampler(skill_policy, hives.evaluate_decoder, config)
 
         if config.modified_buffer:
-            experience_buffer = ModifiedReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
+            experience_buffer = ModifiedReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim, config.reset_frequency)
         else:
             experience_buffer = NormalReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
 
