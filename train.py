@@ -51,11 +51,11 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 8,
-    'max_iterations': int(2e5 + 1),
-    'buffer_size': int(4e5 + 1),
-    'test_freq': 100000,
-    'reset_frequency': 1200,
+    'gradient_steps': 16,
+    'max_iterations': int(200000 + 1),
+    'buffer_size': int(200000 + 1),
+    'test_freq': 64000,
+    'reset_frequency': 12500,
 
     # Run params
     'train_VAE_models': False,
@@ -75,9 +75,9 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(Opt)', config=config,
+    with wandb.init(project='ReplayBuffer-Relocate-(New-1)', config=config,
                     notes='Sample multiple actions from Q critic.',
-                    name='Q exploration 1 std'):
+                    name='Test'):
 
         config = wandb.config
 

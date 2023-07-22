@@ -174,7 +174,6 @@ class ModifiedReplayBuffer:
         self.threshold = 0.0
 
         self.sampling_ratio = reset_ratio
-        self.ratio = .75
         self.env = env
         self.lat_dim = lat_dim
 
@@ -189,23 +188,16 @@ class ModifiedReplayBuffer:
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
-    def sample(self, batch_size=32):
+    def sample(self, batch_size=32, s_ratio=s_ratio):
         # idxs = np.random.randint(0, self.size, size=batch_size)
         # idxs = np.random.power(1 + .25 * self.ptr / 1e5, size=batch_size)
         # idxs = np.array(idxs * self.size, dtype=np.int32)
 
-        if self.size == self.sampling_ratio:
-            self.sampling_ratio = self.sampling_ratio * 2
-            self.ratio = self.ratio / 4
-
-        if self.ratio < 1 / 10:
-            self.ratio = 0
-
-        idxs = np.random.randint(0, self.size, size=int((1 - self.ratio) * 256))
+        idxs = np.random.randint(0, self.size, size=int((1 - s_ratio) * 256))
         
         self.idx_tracker[idxs] += 1
 
-        idxs_off = np.random.randint(0, 120000, size=int(self.ratio * 256))
+        idxs_off = np.random.randint(0, 120000, size=int(s_ratio * 256))
 
         obs = np.concatenate((self.obs_buf[idxs], self.offline_obs_buf[idxs_off]), axis=0)
         z = np.concatenate((self.z_buf[idxs], self.offline_z_buf[idxs_off]), axis=0)
