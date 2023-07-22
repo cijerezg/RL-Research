@@ -224,10 +224,10 @@ class VaLS(hyper_params):
                        'Policy/Eval policy critic_random': eval_test_ave,
                        })
 
-            bins = np.linspace(0, 400000, num=81)
+            bins = np.linspace(0, 200000, num=81)
             vals = []
             for i in range(bins.shape[0] - 1):
-                aux = self.experience_buffer.idx_tracker[i * 5000: 5000*(i + 1)].sum()
+                aux = self.experience_buffer.idx_tracker[i * 2500: 2500*(i + 1)].sum()
                 vals.append(aux)
 
             vals = np.array(vals)
@@ -301,7 +301,7 @@ class VaLS(hyper_params):
             wandb.log({'Critic/Distance critic to target 1': dist1,
                        'Critic/Bellman terms': bellman_terms,
                        'Critic/Bellman ref terms': bellman_terms_ref,
-                       'Critic/Diff Qs': diff_Qs,
+                       'Critic/Diff Qs refs': diff_Qs,
                        'Critic/Eval critic': eval_crit})
 
         q_target = rew + (0.97 * q_target).reshape(-1, 1) * (1 - dones)

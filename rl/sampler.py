@@ -188,7 +188,7 @@ class ModifiedReplayBuffer:
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
-    def sample(self, batch_size=32, s_ratio=s_ratio):
+    def sample(self, batch_size=32, s_ratio=1.0):
         # idxs = np.random.randint(0, self.size, size=batch_size)
         # idxs = np.random.power(1 + .25 * self.ptr / 1e5, size=batch_size)
         # idxs = np.array(idxs * self.size, dtype=np.int32)
