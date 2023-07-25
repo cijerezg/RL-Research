@@ -99,8 +99,8 @@ def main(config=None):
         else:
             experience_buffer = NormalReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
 
-        # with open('checkpoints_relocate/class', 'rb') as file:
-        #     aux_vals = pickle.load(file)
+        with open('checkpoints_relocate/class_200k', 'rb') as file:
+            aux_vals = pickle.load(file)
 
         # exp_idx = 100000
         # idx = 300000
