@@ -76,8 +76,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(New-1)', config=config,
-                    notes='Sample multiple actions from Q critic.',
-                    name='Test'):
+                    notes='Do exponential with offline data, but global instead of each reset.',
+                    name='New-best'):
 
         config = wandb.config
 

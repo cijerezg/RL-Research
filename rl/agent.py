@@ -176,7 +176,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(-self.interval_iteration / self.interval_length)
+        s_ratio = np.exp(-self.iterations / self.max_iterations)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)
 
         obs = torch.from_numpy(batch.observations).to(self.device)
