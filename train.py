@@ -101,7 +101,32 @@ def main(config=None):
 
         with open('checkpoints_relocate/class_200k', 'rb') as file:
             aux_vals = pickle.load(file)
+            
+        cutoff = 100000
+        old_obs = aux_vals.experience_buffer.obs_buf[0:cutoff, :].reshape(1, -1, 39)
+        new_obs = aux_vals.experience_buffer.obs_buf[cutoff:, :].reshape(-1, 1, 39)
 
+        cum_r = aux_vals.experience_buffer.cum_reward[cutoff:, :]
+
+        good_idxs = np.argwhere(cum_r > 13)[:, 0]
+        bad_idxs = np.argwhere(cum_r < 8)[:, 0]
+
+        ind_good = np.diff(good_idxs)
+        ind_good = np.where(ind_good > 1)[0] + 5
+        idxs_good = good_idxs[ind_good]
+
+        ind_bad = np.diff(bad_idxs)
+        ind_bad = np.where(ind_bad > 1)[0] + 5
+        idxs_bad = bad_idxs[ind_bad]
+
+        import matplotlib.pyplot as plt
+        good_runs = np.abs(old_obs - new_obs[idxs_good, :]).max(2)
+        pdb.set_trace()
+        bad_runs = np.abs(old_obs - new_obs[idxs_bad, :]).max(2)
+
+        pdb.set_trace()
+
+            
         # exp_idx = 100000
         # idx = 300000
         # experience_buffer.obs_buf[0: exp_idx, :] = aux_vals.experience_buffer.obs_buf[idx: idx + exp_idx, :]
