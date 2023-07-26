@@ -98,7 +98,7 @@ class VaLS(hyper_params):
             if self.iterations == self.reset_frequency:
                 if self.reset_frequency < 48000:
                     self.reset_frequency = 2 * self.reset_frequency
-                self.gradient_updates = math.ceil(self.gradient_updates / 2)
+                self.gradient_updates = math.ceil(self.gradient_steps / 2)
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
@@ -173,7 +173,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(- 10 * self.iterations / self.max_iterations)
+        s_ratio = np.exp(- 10 * self.iterations / self.max_iterations - .7)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)
 
         obs = torch.from_numpy(batch.observations).to(self.device)
