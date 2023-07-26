@@ -58,10 +58,8 @@ class VaLS(hyper_params):
         self.total_episode_counter = 0
         self.reward_logger = [0]
         self.log_data = 0
-        self.log_data_freq = 500
+        self.log_data_freq = 1000
         self.email = True
-        self.interval_length = self.reset_frequency
-        self.interval_iteration = 0
         
     def training(self, params, optimizers, path, name):
         self.iterations = 0
@@ -93,14 +91,14 @@ class VaLS(hyper_params):
             if self.iterations % self.log_data_freq == 0:
                 wandb.log({'Iterations': self.iterations})
             self.iterations += 1
-            self.interval_iteration += 1
 
             if self.iterations == int(self.reset_frequency * 3 / 4):
                 ref_params = copy.deepcopy(params)
 
             if self.iterations == self.reset_frequency:
-                self.interval_length = self.reset_frequency
-                self.reset_frequency = 2 * self.reset_frequency
+                if self.reset_frequency < 48000:
+                    self.reset_frequency = 2 * self.reset_frequency
+                self.gradient_updates = math.ceil(self.gradient_updates / 2)
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
@@ -153,9 +151,8 @@ class VaLS(hyper_params):
         self.log_data = (self.log_data + 1) % self.log_data_freq
 
         if self.experience_buffer.size > self.batch_size:
-            grad_steps = math.ceil(self.gradient_steps * np.exp(- 3 * self.interval_iteration / self.interval_length))
             
-            for i in range(grad_steps):
+            for i in range(self.gradient_steps):
                 policy_losses, critic1_loss, critic2_loss = self.losses(params, log_data, ref_params)
                 losses = [*policy_losses, critic1_loss, critic2_loss]
                 names = ['SkillPolicy', 'Critic1', 'Critic2']
@@ -176,7 +173,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(-self.iterations / self.max_iterations)
+        s_ratio = np.exp(- 10 * self.iterations / self.max_iterations)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)
 
         obs = torch.from_numpy(batch.observations).to(self.device)
@@ -189,6 +186,8 @@ class VaLS(hyper_params):
         idxs = torch.from_numpy(batch.idxs).to(self.device)
 
         if log_data:
+            singular_vals = self.compute_singular_vals(params)
+            wandb.log(singular_vals)
             # # Critic analysis
             critic_test_arg = torch.cat([obs, z], dim=1)
 
@@ -222,6 +221,7 @@ class VaLS(hyper_params):
             wandb.log({'Critic/Mean diff dist rand': wandb.Histogram(mean_diff_rand.cpu()),
                        'Critic/Mean diff average rand': mean_diff_rand.mean().cpu(),
                        'Policy/Eval policy critic_random': eval_test_ave,
+                       'Critic/Offline ratio': s_ratio,
                        })
 
             bins = np.linspace(0, 200000, num=81)
@@ -486,6 +486,23 @@ class VaLS(hyper_params):
         fig_scatter.update_layout(scene=dict(aspectmode='cube'))
 
         return fig_scatter
+
+    def compute_singular_vals(self, params):
+
+        models = ['Critic1', 'SkillPolicy']
+        nicknames = ['Critic', 'Policy']
+
+        singular_vals = {}
+        
+        with torch.no_grad():
+            for name, mods in zip(nicknames, models):
+                for key, param in params[mods].items():
+                    if len(param.shape) < 2:
+                        continue
+                    U, S, Vh = torch.linalg.svd(param)
+                    singular_vals[f'{name}/{key} - Singular vals'] = S
+
+        return singular_vals
 
     def select_policy(self, params, done, obs):
         if done or obs is None:

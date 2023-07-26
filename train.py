@@ -51,10 +51,10 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 16,
+    'gradient_steps': 1,
     'max_iterations': int(200000 + 1),
     'buffer_size': int(200000 + 1),
-    'test_freq': 64000,
+    'test_freq': 100000,
     'reset_frequency': 12500,
 
     # Run params
@@ -76,8 +76,8 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(New-1)', config=config,
-                    notes='Do exponential with offline data, but global instead of each reset.',
-                    name='New-best'):
+                    notes='This logs singular values',
+                    name='New-attemtp'):
 
         config = wandb.config
 
