@@ -51,7 +51,7 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 1,
+    'gradient_steps': 8,
     'max_iterations': int(200000 + 1),
     'buffer_size': int(200000 + 1),
     'test_freq': 100000,
@@ -77,7 +77,7 @@ def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(New-1)', config=config,
                     notes='This logs singular values',
-                    name='New-attemtp'):
+                    name='New-attemtp2'):
 
         config = wandb.config
 

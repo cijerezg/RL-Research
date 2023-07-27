@@ -58,7 +58,7 @@ class VaLS(hyper_params):
         self.total_episode_counter = 0
         self.reward_logger = [0]
         self.log_data = 0
-        self.log_data_freq = 1000
+        self.log_data_freq = 50
         self.email = True
         
     def training(self, params, optimizers, path, name):
@@ -173,7 +173,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(- 10 * self.iterations / self.max_iterations - .7)
+        s_ratio = np.exp(- 4 * self.iterations / self.max_iterations - .7)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)
 
         obs = torch.from_numpy(batch.observations).to(self.device)
@@ -222,6 +222,7 @@ class VaLS(hyper_params):
                        'Critic/Mean diff average rand': mean_diff_rand.mean().cpu(),
                        'Policy/Eval policy critic_random': eval_test_ave,
                        'Critic/Offline ratio': s_ratio,
+                       'Gradient updates': self.gradient_steps,
                        })
 
             bins = np.linspace(0, 200000, num=81)
@@ -500,6 +501,7 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param)
+                    pdb.set_trace()
                     singular_vals[f'{name}/{key} - Singular vals'] = S
 
         return singular_vals
