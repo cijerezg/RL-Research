@@ -501,7 +501,6 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param)
-                    pdb.set_trace()
                     singular_vals[f'{name}/{key} - Singular vals'] = S
 
         return singular_vals
