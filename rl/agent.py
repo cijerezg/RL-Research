@@ -58,7 +58,7 @@ class VaLS(hyper_params):
         self.total_episode_counter = 0
         self.reward_logger = [0]
         self.log_data = 0
-        self.log_data_freq = 50
+        self.log_data_freq = 1000
         self.email = True
         
     def training(self, params, optimizers, path, name):
@@ -187,7 +187,10 @@ class VaLS(hyper_params):
 
         if log_data:
             singular_vals = self.compute_singular_vals(params)
-            wandb.log(singular_vals)
+
+            for log_name, log_val in singular_vals.items():
+                wandb.log({log_name: wandb.Histogram(log_val)})
+                        
             # # Critic analysis
             critic_test_arg = torch.cat([obs, z], dim=1)
 
@@ -501,7 +504,7 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param)
-                    singular_vals[f'{name}/{key} - Singular vals'] = S
+                    singular_vals[f'{name}/{key} - singular vals'] = S.cpu()
 
         return singular_vals
 

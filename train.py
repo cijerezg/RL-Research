@@ -75,9 +75,9 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(New-1)', config=config,
+    with wandb.init(project='ReplayBuffer-Relocate-(Qvals)', config=config,
                     notes='This logs singular values',
-                    name='New-attemtp2'):
+                    name='Improved'):
 
         config = wandb.config
 
