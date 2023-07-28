@@ -98,11 +98,12 @@ class VaLS(hyper_params):
             if self.iterations == self.reset_frequency:
                 if self.reset_frequency < 48000:
                     self.reset_frequency = 2 * self.reset_frequency
-                self.gradient_updates = math.ceil(self.gradient_steps / 2)
+                self.gradient_steps = math.ceil(self.gradient_steps / 2)
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
-                params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
+                #params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
+                params, optimizers = self.rescale_singular_vals(params, keys, optimizers, self.actor_lr)
                 self.log_alpha_skill = torch.tensor(INIT_LOG_ALPHA, dtype=torch.float32,
                                                     requires_grad=True,
                                                     device=self.device)
@@ -174,7 +175,7 @@ class VaLS(hyper_params):
 
     def losses(self, params, log_data, ref_params):
         s_ratio = np.exp(- 4 * self.iterations / self.max_iterations - .7)
-        batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)
+        batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)       
 
         obs = torch.from_numpy(batch.observations).to(self.device)
         next_obs = torch.from_numpy(batch.next_observations).to(self.device)
@@ -503,11 +504,28 @@ class VaLS(hyper_params):
                 for key, param in params[mods].items():
                     if len(param.shape) < 2:
                         continue
-                    U, S, Vh = torch.linalg.svd(param)
+                    S = torch.linalg.svdvals(param)
                     singular_vals[f'{name}/{key} - singular vals'] = S.cpu()
 
         return singular_vals
 
+    def rescale_singular_vals(self, params, keys, optimizers, lr):
+        k = self.singular_val_k
+        
+        with torch.no_grad():
+            for model in keys:
+                for key, param in params[model].items():
+                    if len(param.shape) < 2:
+                        continue
+                    U, S, Vh = torch.linalg.svd(param, full_matrices=False)
+                    bounded_S = k * (1 - torch.exp(-S / k))
+                    new_param = U @ torch.diag(bounded_S) @ Vh
+                    params[model][key] = nn.Parameter(new_param)
+
+                optimizers[model] = Adam(params[model].values(), lr)
+
+        return params, optimizers
+                    
     def select_policy(self, params, done, obs):
         if done or obs is None:
             self.policy_use = self.policy_use

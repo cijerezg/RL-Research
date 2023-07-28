@@ -56,6 +56,7 @@ config = {
     'buffer_size': int(200000 + 1),
     'test_freq': 100000,
     'reset_frequency': 12500,
+    'singular_val_k': 12,
 
     # Run params
     'train_VAE_models': False,
@@ -77,7 +78,7 @@ def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Qvals)', config=config,
                     notes='This logs singular values',
-                    name='Improved'):
+                    name='Test'):
 
         config = wandb.config
 
