@@ -197,7 +197,7 @@ class ModifiedReplayBuffer:
         
         self.idx_tracker[idxs] += 1
 
-        idxs_off = np.random.randint(0, 120000, size=int(s_ratio * 256))
+        idxs_off = np.random.randint(0, 995000, size=int(s_ratio * 256))
 
         obs = np.concatenate((self.obs_buf[idxs], self.offline_obs_buf[idxs_off]), axis=0)
         z = np.concatenate((self.z_buf[idxs], self.offline_z_buf[idxs_off]), axis=0)
@@ -258,32 +258,50 @@ class ModifiedReplayBuffer:
     def log_offline_dataset(self, path, params, eval_encoder, device):
         dataset = torch.load(path)
 
+        full_size = 125000 * 8
         size = 125000
 
-        self.offline_next_obs_buf = np.zeros((size, *self.env.observation_space.shape), dtype=np.float32)
-        self.offline_z_buf = np.zeros((size, self.lat_dim), dtype=np.float32)
-        self.offline_next_z_buf = np.zeros((size, self.lat_dim), dtype=np.float32)
+        self.offline_obs_buf = np.zeros((full_size, *self.env.observation_space.shape), dtype=np.float32)
+        self.offline_next_obs_buf = np.zeros((full_size, *self.env.observation_space.shape), dtype=np.float32)
+        self.offline_z_buf = np.zeros((full_size, self.lat_dim), dtype=np.float32)
+        self.offline_next_z_buf = np.zeros((full_size, self.lat_dim), dtype=np.float32)
+        self.offline_rew_buf = np.zeros((full_size), dtype=np.float32)
+        self.offline_done_buf = np.zeros((full_size), dtype=bool)
+        self.offline_cum_reward_buf = np.zeros((full_size), dtype=np.float32)
 
-        keys = ['observations', 'actions', 'rewards', 'timeouts']
-        dataset = {key: dataset[key] for key in keys}
+        pad_2d = ((0, 7), (0, 0))
+        pad_1d = ((0, 7))
+
+        keys = {'observations': pad_2d, 'actions': pad_2d, 'rewards': pad_1d, 'timeouts': pad_1d}
+
+        dataset = {key: np.pad(dataset[key], pad, mode='reflect') for key, pad in keys.items()}
 
         actions = torch.from_numpy(dataset['actions']).to(device)
 
-        for i in range(5000):
-            with torch.no_grad():
-                z, pdf, mu, std = eval_encoder(actions[200 * i: 200 * (i + 1), :], params)
-            mu = mu.cpu().numpy()
-            self.offline_z_buf[25 * i: 25 * (i + 1), :] = mu
+        for j in range(8):
+            for i in range(5000):
+                with torch.no_grad():
+                    z, pdf, mu, std = eval_encoder(actions[j + 200 * i: j + 200 * (i + 1), :], params)
+                mu = mu.cpu().numpy()
+                self.offline_z_buf[j * size + 25 * i: j * size + 25 * (i + 1), :] = mu
 
-        self.offline_obs_buf = dataset['observations'][0::8]
-        self.offline_rew_buf = dataset['rewards'][0::8]
-        self.offline_done_buf = dataset['timeouts'][7::8]
+            if j == 7:
+                self.offline_obs_buf[j * size: (j + 1) * size, :] = dataset['observations'][j::8]
+                self.offline_rew_buf[j * size: (j + 1) * size] = dataset['rewards'][j::8]
 
-        self.offline_cum_reward_buf = dataset['rewards'][dataset['timeouts']]
-        self.offline_cum_reward_buf = np.repeat(self.offline_cum_reward_buf, 25)
+            else:
+                self.offline_obs_buf[j * size: (j + 1) * size, :] = dataset['observations'][j::8][:-1,:]
+                self.offline_rew_buf[j * size: (j + 1) * size] = dataset['rewards'][j::8][:-1]
 
-        self.offline_next_obs_buf[0:size - 1, :] = self.offline_obs_buf[1:, :]
-        self.offline_next_z_buf[0:size - 1, :] = self.offline_z_buf[1:, :]
+            self.offline_done_buf[j * size: (j + 1) * size] = dataset['timeouts'][7 + j::8]
+                
+            self.offline_next_obs_buf[j * size: (j + 1) * size - 1, :] = self.offline_obs_buf[j * size + 1: (j + 1) * size, :]
+            self.offline_next_z_buf[j * size: (j + 1) * size - 1, :] = self.offline_z_buf[j * size +1: (j + 1) * size, :]
+            
+        cum_reward = dataset['rewards'][dataset['timeouts']]
+        cum_reward = np.repeat(cum_reward, 25)
+        self.offline_cum_reward_buf = np.repeat(cum_reward, 8)
+        
 
         self.offline_obs_buf = self.offline_obs_buf[~self.offline_done_buf, :]
         self.offline_z_buf = self.offline_z_buf[~self.offline_done_buf, :]
@@ -291,6 +309,6 @@ class ModifiedReplayBuffer:
         self.offline_next_z_buf = self.offline_next_z_buf[~self.offline_done_buf, :]
         self.offline_rew_buf = self.offline_rew_buf[~self.offline_done_buf].reshape(-1, 1)
         self.offline_cum_reward_buf = self.offline_cum_reward_buf[~self.offline_done_buf].reshape(-1, 1)
-        self.offline_done_buf = self.offline_done_buf[~self.offline_done_buf].reshape(-1, 1)  
+        self.offline_done_buf = self.offline_done_buf[~self.offline_done_buf].reshape(-1, 1)
 
         
