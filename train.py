@@ -64,7 +64,7 @@ config = {
     'train_rl': True,
     'load_VAE_models': True,
     'load_prior_models': True,
-    'load_rl_models': False,
+    'load_rl_models': True,
     'use_SAC': False,
     'modified_buffer': True,
     'render_results': False

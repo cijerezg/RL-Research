@@ -331,6 +331,8 @@ class VaLS(hyper_params):
         
         z_sample, pdf, mu, std = self.eval_skill_policy(obs, params)
 
+        pdb.set_trace()
+
         q_pi_arg = torch.cat([obs, z_sample], dim=1)
         
         q_pi1, q_pi2 = self.eval_critic(q_pi_arg, params)
