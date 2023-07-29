@@ -55,7 +55,7 @@ config = {
     'max_iterations': int(200000 + 1),
     'buffer_size': int(200000 + 1),
     'test_freq': 100000,
-    'reset_frequency': 12500,
+    'reset_frequency': 25000,
     'singular_val_k': 12,
 
     # Run params

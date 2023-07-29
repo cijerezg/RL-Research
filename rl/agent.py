@@ -96,8 +96,7 @@ class VaLS(hyper_params):
                 ref_params = copy.deepcopy(params)
 
             if self.iterations == self.reset_frequency:
-                if self.reset_frequency < 48000:
-                    self.reset_frequency = 2 * self.reset_frequency
+                self.reset_frequency = 2 * self.reset_frequency
                 self.gradient_steps = math.ceil(self.gradient_steps / 2)
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
@@ -174,7 +173,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(- 4 * self.iterations / self.max_iterations - .7)
+        s_ratio = np.exp(- 3 * self.iterations / self.max_iterations - .7)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)       
 
         obs = torch.from_numpy(batch.observations).to(self.device)
@@ -241,7 +240,7 @@ class VaLS(hyper_params):
             wandb.log({'Logged idx': wandb.Histogram(np_histogram=hist)})
                                                                  
         ####
-        trials = 128
+        trials = 64
         
         expanded_z = next_z.reshape(1, next_z.shape[0], next_z.shape[1]).repeat(trials, 1, 1)
         expanded_z = expanded_z + torch.randn(expanded_z.shape).to(self.device) / 2.0
@@ -330,8 +329,6 @@ class VaLS(hyper_params):
         #     self.email = False
         
         z_sample, pdf, mu, std = self.eval_skill_policy(obs, params)
-
-        pdb.set_trace()
 
         q_pi_arg = torch.cat([obs, z_sample], dim=1)
         
@@ -495,7 +492,6 @@ class VaLS(hyper_params):
         return fig_scatter
 
     def compute_singular_vals(self, params):
-
         models = ['Critic1', 'SkillPolicy']
         nicknames = ['Critic', 'Policy']
 
@@ -520,7 +516,7 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param, full_matrices=False)
-                    bounded_S = k * (1 - torch.exp(-S / k))
+                    bounded_S = (1 - torch.exp(-S / k))
                     new_param = U @ torch.diag(bounded_S) @ Vh
                     params[model][key] = nn.Parameter(new_param)
 
