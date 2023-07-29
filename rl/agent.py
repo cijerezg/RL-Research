@@ -102,8 +102,8 @@ class VaLS(hyper_params):
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
-                #params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
-                params, optimizers = self.rescale_singular_vals(params, keys, optimizers, self.actor_lr)
+                params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
+                #params, optimizers = self.rescale_singular_vals(params, keys, optimizers, self.actor_lr)
                 self.log_alpha_skill = torch.tensor(INIT_LOG_ALPHA, dtype=torch.float32,
                                                     requires_grad=True,
                                                     device=self.device)
@@ -330,8 +330,6 @@ class VaLS(hyper_params):
         #     self.email = False
         
         z_sample, pdf, mu, std = self.eval_skill_policy(obs, params)
-
-        pdb.set_trace()
 
         q_pi_arg = torch.cat([obs, z_sample], dim=1)
         
