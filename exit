@@ -1,0 +1,131 @@
+[33mcommit edf7043a7923086bdd011b9d920d12514444cf5a[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/full_offline_dataset[m[33m)[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Fri Jul 28 23:22:02 2023 -0500
+
+    Minor fixes
+
+[33mcommit 2e36276a54b5697289f55a83132eb768c00e088e[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Fri Jul 28 17:48:54 2023 -0500
+
+    Full offline dataset
+
+[33mcommit 5ffb652c2d25e53704b585f4f123330611290bb6[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Fri Jul 28 16:03:18 2023 -0500
+
+    Minor fixes
+
+[33mcommit 1c0e95cac2f340a0d4129640fef0d551ba27d57d[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Fri Jul 28 15:32:36 2023 -0500
+
+    Bound singular vals with neg exp function.
+
+[33mcommit 8f7b6572849a711fd5e4724ccf7f0f3e2edf6ee8[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 27 16:32:57 2023 -0500
+
+    Minor fixes
+
+[33mcommit f318fdc5c5ce44b453ceb31ded252a1ca9ea65cb[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 27 15:55:32 2023 -0500
+
+    Minor fixes
+
+[33mcommit af1e36cc56e50653ca4f7096074ddf1a4a5a45b8[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 27 15:54:59 2023 -0500
+
+    Minor fixes
+
+[33mcommit edd4d5e7062d5782230aec354b34c0933238a1ce[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Wed Jul 26 10:51:38 2023 -0500
+
+    Fix minor typos
+
+[33mcommit 04254c76ec7740a40f0680871120e6020f5e9342[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Wed Jul 26 00:02:29 2023 -0500
+
+    Log singular vals to wandb
+
+[33mcommit cfefb0cd068a6cec059fa265300bd65b3213b7ae[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Tue Jul 25 00:42:01 2023 -0500
+
+    Global exponential decay for offline data
+
+[33mcommit 36d9f86f20a42ceb4f321b6d645a57877ac05c03[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Sat Jul 22 15:40:44 2023 -0500
+
+    Minor updates
+
+[33mcommit 44fe4a7b1e2d7ef1d0f6faa7e9797003f24519a6[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Sat Jul 22 10:46:21 2023 -0500
+
+    Exponential grad steps and offline data logging
+
+[33mcommit f320b8d530e851db24a29c250a3843c9655df13a[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 20 23:40:10 2023 -0500
+
+    More minor details
+
+[33mcommit c4e9dc67db67613249d4e454719b2713eaa38635[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 20 23:31:06 2023 -0500
+
+    Fix minor errors
+
+[33mcommit 303bd1d21a03daa3635a3846982be94f17bf1fa1[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 20 11:08:47 2023 -0500
+
+    Feeding target crit with multi vals
+
+[33mcommit e225885c822daff1fc4376f25c1cb71cbd60ca06[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 20 09:32:44 2023 -0500
+
+    Update changes
+
+[33mcommit 845df56fbc6ddbbffbcd9085b1a764963d2c1fd5[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Wed Jul 19 00:00:21 2023 -0500
+
+    Removing some useless wandb metrics
+
+[33mcommit 9e21631057230e82a53fdbbbab9115ead53370bd[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Sun Jul 16 23:45:15 2023 -0500
+
+    Load pretrained buffer for experiment
+
+[33mcommit 17a604062a0759af1cff01a942d6118367536c17[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Sat Jul 15 23:16:14 2023 -0500
+
+    Fix minor typo
+
+[33mcommit e37107a4f75c6f3486d08e3a29ffaaeb80955b04[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Sat Jul 15 21:23:58 2023 -0500
+
+    Adding offline dataset for online training
+
+[33mcommit 496cd0c90e8a30d896acddcb9a92787631dd9102[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Fri Jul 14 23:23:44 2023 -0500
+
+    Adding obs with Qvals logging
+
+[33mcommit b6aa02e35e35ef610a028dd45dac8df8829d44a1[m
+Author: carlos <cijerezg@unal.edu.co>
+Date:   Thu Jul 13 11:38:40 2023 -0500
+
+    First commit

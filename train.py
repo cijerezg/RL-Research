@@ -78,7 +78,7 @@ def main(config=None):
     """Train all modules."""
     with wandb.init(project='ReplayBuffer-Relocate-(Qvals)', config=config,
                     notes='This logs singular values',
-                    name='Full offline'):
+                    name='Test'):
 
         config = wandb.config
 
