@@ -101,8 +101,9 @@ class VaLS(hyper_params):
                 self.interval_iteration = 0
                 keys = ['SkillPolicy', 'Critic1', 'Critic2']
                 ref_params = copy.deepcopy(params)
-                #params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
+                # params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
                 params, optimizers = self.rescale_singular_vals(params, keys, optimizers, self.actor_lr)
+                self.singular_val_k = 2 * self.singular_val_k
                 self.log_alpha_skill = torch.tensor(INIT_LOG_ALPHA, dtype=torch.float32,
                                                     requires_grad=True,
                                                     device=self.device)
@@ -516,7 +517,7 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param, full_matrices=False)
-                    bounded_S = (1 - torch.exp(-S / k))
+                    bounded_S = k * (1 - torch.exp(-S / k))
                     new_param = U @ torch.diag(bounded_S) @ Vh
                     params[model][key] = nn.Parameter(new_param)
 

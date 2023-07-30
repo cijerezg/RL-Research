@@ -55,8 +55,8 @@ config = {
     'max_iterations': int(200000 + 1),
     'buffer_size': int(200000 + 1),
     'test_freq': 100000,
-    'reset_frequency': 25000,
-    'singular_val_k': 12,
+    'reset_frequency': 300,
+    'singular_val_k': 1,
 
     # Run params
     'train_VAE_models': False,
@@ -76,7 +76,7 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(Qvals)', config=config,
+    with wandb.init(project='ReplayBuffer-Relocate-(SVDvals)', config=config,
                     notes='This logs singular values',
                     name='Test'):
 
@@ -100,8 +100,10 @@ def main(config=None):
         else:
             experience_buffer = NormalReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
 
-        # with open('checkpoints_relocate/class', 'rb') as file:
-        #     aux_vals = pickle.load(file)
+        with open('checkpoints_relocate/class', 'rb') as file:
+            aux_vals = pickle.load(file)
+
+        pdb.set_trace()
 
         # exp_idx = 100000
         # idx = 300000
