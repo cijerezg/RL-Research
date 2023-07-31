@@ -103,6 +103,49 @@ def main(config=None):
         with open('checkpoints_relocate/class', 'rb') as file:
             aux_vals = pickle.load(file)
 
+        def get_zero_obs_idxs(obs):
+            obs_init = obs[:, 0:30]
+            return np.argwhere(obs_init.sum(1) == 0).squeeze()
+        
+        idxs_offline = get_zero_obs_idxs(aux_vals.experience_buffer.offline_obs_buf)
+        idxs_online = get_zero_obs_idxs(aux_vals.experience_buffer.obs_buf[0:25000,:])
+
+        import matplotlib.pyplot as plt
+        obs_off = aux_vals.experience_buffer.offline_obs_buf[idxs_offline][:, 30:]
+        obs_on = aux_vals.experience_buffer.obs_buf[idxs_online][:,30:]
+
+        rews_on = aux_vals.experience_buffer.cum_reward[idxs_online].squeeze()
+
+        def comparison(obs1, obs2):
+            diff = np.abs(obs1.reshape(-1, 1, 9) - obs2.reshape(1, -1, 9)).max(2)
+            return diff
+            
+
+        off_on = comparison(obs_off, obs_on)
+        off_off = comparison(obs_off, obs_off)
+        on_on = comparison(obs_on, obs_on)
+
+        sorted_off_on = np.sort(comparison(obs_off, obs_on), 0)
+        sorted_off_off = np.sort(comparison(obs_off, obs_off), 0)
+        sorted_on_on = np.sort(comparison(obs_on, obs_on), 0)
+        
+        good_runs = obs_on[rews_on > 15]
+        bad_runs = obs_on[rews_on < .5]
+
+        runs = np.concatenate((good_runs, bad_runs), axis=0)
+
+        on_good = comparison(obs_on, good_runs)
+        on_bad = comparison(obs_on, bad_runs)
+
+        on_good_0 = np.sort(on_good, 0)
+        on_bad_0 = np.sort(on_bad, 0)
+
+        on_good_1 = np.sort(on_good_0, 1)
+        on_bad_1 = np.sort(on_bad_0, 1)
+        
+        
+            
+        
         pdb.set_trace()
 
         # exp_idx = 100000
@@ -187,6 +230,7 @@ def main(config=None):
 
         if config.render_results:
             vals.render_results(params, f'videos/{config.env_id}/{CASE_FOLDER}')
+
 
             
 main(config=config)
