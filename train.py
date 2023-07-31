@@ -131,6 +131,8 @@ def main(config=None):
         
         good_runs = obs_on[rews_on > 15]
         bad_runs = obs_on[rews_on < .5]
+        upper = obs_on[(rews_on > 4) & (rews_on < 15)]
+        lower = obs_on[(rews_on > .5) & (rews_on < 4)]
 
         runs = np.concatenate((good_runs, bad_runs), axis=0)
 
@@ -142,7 +144,44 @@ def main(config=None):
 
         on_good_1 = np.sort(on_good_0, 1)
         on_bad_1 = np.sort(on_bad_0, 1)
+
+        import seaborn as sns
+        import pandas as pd       
         
+
+        df_good = pd.DataFrame(good_runs)
+        df_good['Label'] = 'Good'
+
+        df_bad = pd.DataFrame(bad_runs)
+        df_bad['Label'] = 'Bad'
+
+        df_off = pd.DataFrame(obs_off)
+        df_off['Label'] = 'Offline'
+
+        df = pd.concat((df_good, df_bad, df_off), axis=0)
+
+        idxs = [[5, 7],
+                [5, 8],
+                [7, 8]]
+
+        for idx in idxs:
+            sns.displot(df, x=df.columns[idx[0]],y=df.columns[idx[1]],hue='Label',kind='kde')
+            plt.show()
+        
+
+        pdb.set_trace()
+        for i in range(9):
+            vals = np.concatenate((good_runs[:, i], bad_runs[:, i]), 0)
+
+            names = np.concatenate((['Good'] * 137, ['Bad'] * 251), 0)
+            data = pd.DataFrame(list(zip(vals, names)), columns=['Vals', 'Names'])
+
+            plt.hist((good_runs[:,i], bad_runs[:,i], obs_off[:,i]), color=('green','red','blue'), density=True)
+            plt.title(f'Coordinates are {i}')
+            plt.show()
+        #     # sns.displot(data, x='Vals', hue='Names', kind='kde')
+        #     # plt.title(i)
+        #     # plt.show()
         
             
         
