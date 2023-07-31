@@ -95,7 +95,7 @@ class VaLS(hyper_params):
             if self.iterations == int(self.reset_frequency * 3 / 4):
                 ref_params = copy.deepcopy(params)
 
-            if self.iterations == self.reset_frequency:
+            if self.iterations % self.reset_frequency == 0:
                 self.reset_frequency = 2 * self.reset_frequency
                 self.gradient_steps = math.ceil(self.gradient_steps / 2)
                 self.interval_iteration = 0
@@ -174,7 +174,7 @@ class VaLS(hyper_params):
         return params, next_obs, done
 
     def losses(self, params, log_data, ref_params):
-        s_ratio = np.exp(- 3 * self.iterations / self.max_iterations - .7)
+        s_ratio = np.exp(- 4 * self.iterations / self.max_iterations - .7)
         batch = self.experience_buffer.sample(batch_size=self.batch_size, s_ratio=s_ratio)       
 
         obs = torch.from_numpy(batch.observations).to(self.device)
@@ -291,6 +291,11 @@ class VaLS(hyper_params):
             bellman_terms_ref = self.log_scatter_3d(q1, q_refs, cum_reward, idxs.unsqueeze(dim=1),
                                                     'Q val', 'Q refs', 'Cum reward', 'Idxs')
 
+            idxs_batch = torch.tensor(self.experience_buffer.idx_tracker[idxs.cpu()])
+            
+            bellman_terms_updated = self.log_scatter_3d(q1, q_refs, cum_reward, idxs_batch,
+                                                        'Q val', 'Q refs', 'Cum reward', 'Iters')
+
             d1, d2, d3 = self.distance_to_target_env(obs)
             
             with torch.no_grad():
@@ -307,7 +312,8 @@ class VaLS(hyper_params):
                        'Critic/Bellman terms': bellman_terms,
                        'Critic/Bellman ref terms': bellman_terms_ref,
                        'Critic/Diff Qs refs': diff_Qs,
-                       'Critic/Eval critic': eval_crit})
+                       'Critic/Eval critic': eval_crit,
+                       'Critic/Bellman terms counts': bellman_terms_updated})
 
         q_target = rew + (0.97 * q_target).reshape(-1, 1) * (1 - dones)
         q_target = torch.clamp(q_target, min=-100, max=100)
@@ -315,8 +321,17 @@ class VaLS(hyper_params):
         critic1_loss = F.mse_loss(q1.squeeze(), q_target.squeeze(),
                                   reduction='none')
         critic2_loss = F.mse_loss(q2.squeeze(), q_target.squeeze(),
-                                  reduction='none')
+                                  reduction='none')        
 
+        weights = cum_reward
+        weights[int(s_ratio * self.batch_size):] = torch.tensor(2.0).to(self.device)
+
+        weights = 5 * torch.log(weights + 1.6)
+        weights = weights.squeeze()
+
+        critic1_loss = critic1_loss * weights
+        critic2_loss = critic2_loss * weights
+                
         critic1_loss = critic1_loss.mean()
         critic2_loss = critic2_loss.mean()
         
@@ -344,6 +359,8 @@ class VaLS(hyper_params):
         
         alpha_skill = torch.exp(self.log_alpha_skill).detach()
         skill_prior_loss = alpha_skill * skill_prior
+
+        q_pi = q_pi * weights
         
         q_val_policy = -torch.mean(q_pi)
         skill_policy_loss = q_val_policy + skill_prior_loss
@@ -517,7 +534,7 @@ class VaLS(hyper_params):
                     if len(param.shape) < 2:
                         continue
                     U, S, Vh = torch.linalg.svd(param, full_matrices=False)
-                    bounded_S = (1 - torch.exp(-S / k))
+                    bounded_S = k * (1 - torch.exp(-S / k))
                     new_param = U @ torch.diag(bounded_S) @ Vh
                     params[model][key] = nn.Parameter(new_param)
 

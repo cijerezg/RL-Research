@@ -51,12 +51,12 @@ config = {
     'delta_skill': 32,
     'delta_length': 32,
     'z_state_dim': 8,
-    'gradient_steps': 8,
+    'gradient_steps': 16,
     'max_iterations': int(200000 + 1),
     'buffer_size': int(200000 + 1),
     'test_freq': 100000,
     'reset_frequency': 25000,
-    'singular_val_k': 12,
+    'singular_val_k': 1,
 
     # Run params
     'train_VAE_models': False,
@@ -64,7 +64,7 @@ config = {
     'train_rl': True,
     'load_VAE_models': True,
     'load_prior_models': True,
-    'load_rl_models': True,
+    'load_rl_models': False,
     'use_SAC': False,
     'modified_buffer': True,
     'render_results': False
@@ -76,9 +76,9 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(Qvals)', config=config,
+    with wandb.init(project='ReplayBuffer-Relocate-(SVDvals)', config=config,
                     notes='This logs singular values',
-                    name='Test'):
+                    name='SVDvals with weights'):
 
         config = wandb.config
 
