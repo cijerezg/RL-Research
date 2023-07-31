@@ -103,6 +103,7 @@ class VaLS(hyper_params):
                 ref_params = copy.deepcopy(params)
                 #params, optimizers = reset_params(params, keys, optimizers, self.actor_lr)
                 params, optimizers = self.rescale_singular_vals(params, keys, optimizers, self.actor_lr)
+                self.singular_val_k = 2 * self.singular_val_k
                 self.log_alpha_skill = torch.tensor(INIT_LOG_ALPHA, dtype=torch.float32,
                                                     requires_grad=True,
                                                     device=self.device)
