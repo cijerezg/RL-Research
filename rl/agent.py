@@ -293,7 +293,7 @@ class VaLS(hyper_params):
 
             idxs_batch = torch.tensor(self.experience_buffer.idx_tracker[idxs.cpu()])
             
-            bellman_terms_updated = self.log_scatter_3d(q1, q_refs, cum_reward, idxs_batch,
+            bellman_terms_updated = self.log_scatter_3d(q1, q_target.unsqueeze(dim=1), cum_reward, idxs_batch,
                                                         'Q val', 'Q refs', 'Cum reward', 'Iters')
 
             d1, d2, d3 = self.distance_to_target_env(obs)

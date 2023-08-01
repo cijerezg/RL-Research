@@ -111,54 +111,8 @@ class Sampler(hyper_params):
 
         return frames
     
-
-class NormalReplayBuffer:
-    def __init__(self, size, env, lat_dim):
-        self.obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)
-        self.next_obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)
-        self.z_buf = np.zeros((size, lat_dim), dtype=np.float32)
-        self.next_z_buf = np.zeros((size, lat_dim), dtype=np.float32)
-        self.rew_buf = np.zeros((size, 1), dtype=np.float32)
-        self.done_buf = np.zeros((size, 1), dtype=np.float32)
-        self.ptr, self.size, self.max_size = 0, 0, size
-        self.tracker = np.arange(size)
-
-    def add(self, obs, next_obs, z, next_z, rew, done):
-        self.obs_buf[self.ptr] = obs
-        self.next_obs_buf[self.ptr] = next_obs
-        self.z_buf[self.ptr] = z
-        self.next_z_buf[self.ptr] = next_z
-        self.rew_buf[self.ptr] = rew
-        self.done_buf[self.ptr] = done
-        self.ptr = (self.ptr + 1) % self.max_size
-        self.size = min(self.size + 1, self.max_size)
-
-    def sample(self, batch_size=32):
-        # idxs = np.random.randint(0, self.size, size=batch_size)
-        idxs = np.random.randint(0, self.size, size=batch_size)
-        batch = AttrDict(observations=self.obs_buf[idxs],
-                         next_observations=self.next_obs_buf[idxs],
-                         z=self.z_buf[idxs],
-                         next_z=self.next_z_buf[idxs],
-                         rewards=self.rew_buf[idxs],
-                         dones=self.done_buf[idxs])
-        return batch
-
-    def sample_recent_eps(self, batch_size=128):
-        idx = self.size
-        batch = AttrDict(observations=self.obs_buf[idx - batch_size:idx],
-                         next_observations=self.next_obs_buf[idx - batch_size:idx],
-                         z=self.z_buf[idx - batch_size:idx],
-                         next_z=self.next_z_buf[idx - batch_size:idx],
-                         rewards=self.rew_buf[idx - batch_size:idx],
-                         dones=self.done_buf[idx - batch_size:idx],
-                         tracker=self.tracker[idx - batch_size:idx])
-
-        return batch
-
-
-        
-class ModifiedReplayBuffer:
+       
+class ReplayBuffer:
     def __init__(self, size, env, lat_dim, reset_ratio):
         self.obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)
         self.next_obs_buf = np.zeros((size, *env.observation_space.shape), dtype=np.float32)

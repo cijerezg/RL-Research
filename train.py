@@ -4,7 +4,7 @@ from offline.offline_train import HIVES
 from utilities.utils import params_extraction, load_pretrained_models
 from utilities.optimization import set_optimizers
 from rl.agent import VaLS
-from rl.sampler import Sampler, NormalReplayBuffer, ModifiedReplayBuffer
+from rl.sampler import Sampler, ReplayBuffer
 from datetime import datetime
 from models.nns import Critic, SkillPolicy, StateEncoder, StateDecoder
 import wandb
@@ -66,7 +66,6 @@ config = {
     'load_prior_models': True,
     'load_rl_models': False,
     'use_SAC': False,
-    'modified_buffer': True,
     'render_results': False
 }
 
@@ -76,9 +75,9 @@ path_to_data = f'datasets/{ENV_NAME}.pt'
 
 def main(config=None):
     """Train all modules."""
-    with wandb.init(project='ReplayBuffer-Relocate-(SVDvals)', config=config,
+    with wandb.init(project='SERL-Relocate-Expert', config=config,
                     notes='This logs singular values',
-                    name='SVDvals with weights'):
+                    name='GD - 12.5k - 16'):
 
         config = wandb.config
 
@@ -95,26 +94,8 @@ def main(config=None):
         
         sampler = Sampler(skill_policy, hives.evaluate_decoder, config)
 
-        if config.modified_buffer:
-            experience_buffer = ModifiedReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim, config.reset_frequency)
-        else:
-            experience_buffer = NormalReplayBuffer(hives.buffer_size, sampler.env, hives.z_skill_dim)
-
-        # with open('checkpoints_relocate/class', 'rb') as file:
-        #     aux_vals = pickle.load(file)
-
-        # exp_idx = 100000
-        # idx = 300000
-        # experience_buffer.obs_buf[0: exp_idx, :] = aux_vals.experience_buffer.obs_buf[idx: idx + exp_idx, :]
-        # experience_buffer.next_obs_buf[0: exp_idx, :] = aux_vals.experience_buffer.next_obs_buf[idx: idx + exp_idx, :]
-        # experience_buffer.z_buf[0: exp_idx, :] = aux_vals.experience_buffer.z_buf[idx: idx + exp_idx, :]
-        # experience_buffer.next_z_buf[0: exp_idx, :] = aux_vals.experience_buffer.next_z_buf[idx: idx + exp_idx, :]
-        # experience_buffer.rew_buf[0: exp_idx, :] = aux_vals.experience_buffer.rew_buf[idx: idx + exp_idx, :]
-        # experience_buffer.done_buf[0: exp_idx, :] = aux_vals.experience_buffer.done_buf[idx: idx + exp_idx, :]
-        # experience_buffer.cum_reward[0: exp_idx, :] = aux_vals.experience_buffer.cum_reward[idx: idx + exp_idx, :]
-        
-        # experience_buffer.ptr = exp_idx
-        # experience_buffer.size = exp_idx
+        experience_buffer = ReplayBuffer(hives.buffer_size, sampler.env,
+                                         hives.z_skill_dim, config.reset_frequency)
 
         vals = VaLS(sampler,
                     experience_buffer,
